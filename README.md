@@ -1,57 +1,58 @@
 # Supabase Token Viewer
 
-A developer tool to inspect Supabase JWT access tokens obtained via OAuth 2 (PKCE flow).
+Supabase OAuth 2 (PKCE flow)를 통해 획득한 Supabase JWT 액세스 토큰을 검사하기 위한 개발자 도구입니다.
 
-## Overview
+## 개요
 
-This app walks through the full Supabase OAuth 2 authentication cycle and lets you visually inspect every part of the resulting session:
+이 앱은 Supabase Auth 시스템에서 발급된 토큰을 외부 API에서 인증/인가 용도로 사용하기 용이하도록
+Supabase Auth를 통해 인증을 수행한 다음 AccessToken을 추출합니다.  
 
-- Initiates an OAuth 2 PKCE flow with GitHub or Google
-- Exchanges the authorization code for a Supabase session on the server
-- Displays the raw Access Token (JWT) with a one-click copy button
-- Decodes the JWT payload (Base64url) and renders it as syntax-highlighted JSON
-- Shows a live countdown to token expiry
-- Monitors automatic token refresh events via `onAuthStateChange`
+- GitHub 또는 Google을 통한 OAuth 2 PKCE 플로우 시작
+- 서버에서 인증 코드를 Supabase 세션으로 교환
+- 원클릭 복사 버튼이 포함된 원본 액세스 토큰(JWT) 표시
+- JWT 페이로드(Base64url) 디코딩 및 구문 강조된 JSON으로 렌더링
+- 토큰 만료까지의 실시간 카운트다운 표시
+- `onAuthStateChange`를 통한 자동 토큰 갱신 이벤트 모니터링
 
-> **For development and learning purposes only.** Never expose Access Tokens in a production UI.
+> **개발 및 학습 목적으로만 사용하세요.** 프로덕션 UI에서 액세스 토큰을 노출하지 마십시오.
 
-## Features
+## 주요 기능
 
-- OAuth 2 (PKCE) login — GitHub / Google
-- Server-side `exchangeCodeForSession` (secure code exchange)
-- Access Token raw display + clipboard copy
-- JWT Payload decoding (no external library — pure `atob`)
-- Live expiry countdown (updated every second)
-- Auto-refresh monitoring (`TOKEN_REFRESHED` event)
-- Refresh Token display + clipboard copy
+- OAuth 2 (PKCE) 로그인 — GitHub / Google
+- 서버 측 `exchangeCodeForSession` (보안 코드 교환)
+- 액세스 토큰 원본 표시 + 클립보드 복사
+- JWT 페이로드 디코딩 (외부 라이브러리 없이 순수 `atob` 사용)
+- 실시간 만료 카운트다운 (1초마다 업데이트)
+- 자동 갱신 모니터링 (`TOKEN_REFRESHED` 이벤트)
+- 리프레시 토큰 표시 + 클립보드 복사
 
-## Tech Stack
+## 기술 스택
 
-| Role | Technology |
+| 역할 | 기술 |
 |------|-----------|
-| Framework | SvelteKit + TypeScript |
-| Auth | @supabase/supabase-js v2 (PKCE flow) |
-| SSR Auth | @supabase/ssr (cookie-based session sync) |
-| Styling | Tailwind CSS v4 |
-| Package Manager | yarn |
+| 프레임워크 | SvelteKit + TypeScript |
+| 인증 | @supabase/supabase-js v2 (PKCE 플로우) |
+| SSR 인증 | @supabase/ssr (쿠키 기반 세션 동기화) |
+| 스타일링 | Tailwind CSS v4 |
+| 패키지 관리자 | yarn |
 
-## Getting Started
+## 시작하기
 
-### Prerequisites
+### 사전 요구 사항
 
 - Node.js 20+
-- A [Supabase](https://supabase.com) project
-- A GitHub OAuth App **or** a Google OAuth Client configured in your Supabase project
+- [Supabase](https://supabase.com) 프로젝트
+- Supabase 프로젝트에 설정된 GitHub OAuth 앱 **또는** Google OAuth 클라이언트
 
-#### Supabase Dashboard Setup
+#### Supabase 대시보드 설정
 
-1. Go to **Authentication → Providers** and enable GitHub or Google.
-2. Enter your OAuth app's **Client ID** and **Client Secret**.
-3. Go to **Authentication → URL Configuration** and add:
+1. **Authentication → Providers**로 이동하여 GitHub 또는 Google을 활성화합니다.
+2. OAuth 앱의 **Client ID**와 **Client Secret**을 입력합니다.
+3. **Authentication → URL Configuration**으로 이동하여 다음을 추가합니다:
    - **Site URL**: `http://localhost:5173`
    - **Redirect URLs**: `http://localhost:5173/auth/callback`
 
-### Installation
+### 설치
 
 ```bash
 git clone <repo-url>
@@ -59,66 +60,66 @@ cd supabase-token-getter
 yarn install
 ```
 
-### Environment Variables
+### 환경 변수
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your project values:
+`.env` 파일을 프로젝트 값으로 수정합니다:
 
 ```env
 PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-| Variable | Where to find it |
+| 변수 | 확인 위치 |
 |----------|-----------------|
-| `PUBLIC_SUPABASE_URL` | Supabase Dashboard → Project Settings → API → Project URL |
-| `PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard → Project Settings → API → anon/public key |
+| `PUBLIC_SUPABASE_URL` | Supabase 대시보드 → Project Settings → API → Project URL |
+| `PUBLIC_SUPABASE_ANON_KEY` | Supabase 대시보드 → Project Settings → API → anon/public key |
 
-### Run
+### 실행
 
 ```bash
 yarn dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+브라우저에서 [http://localhost:5173](http://localhost:5173)을 엽니다.
 
-## How It Works
+## 작동 원리
 
 ```
-1. User clicks "Sign in with GitHub/Google"
+1. 사용자가 "GitHub/Google로 로그인" 클릭
         │
         ▼
-2. supabase.auth.signInWithOAuth() generates a PKCE code_challenge
-   and redirects the browser to the OAuth provider.
+2. supabase.auth.signInWithOAuth()가 PKCE code_challenge를 생성하고
+   브라우저를 OAuth 제공업체로 리디렉션합니다.
         │
         ▼
-3. User approves the OAuth consent screen.
-   Provider redirects back to /auth/callback?code=xxx
+3. 사용자가 OAuth 동의 화면을 승인합니다.
+   제공업체는 /auth/callback?code=xxx로 리디렉션합니다.
         │
         ▼
-4. Server load function calls exchangeCodeForSession(code).
-   Supabase verifies the code + code_verifier and issues a session.
-   Session is stored in an HTTP-only cookie.
+4. 서버 load 함수가 exchangeCodeForSession(code)를 호출합니다.
+   Supabase는 code + code_verifier를 확인하고 세션을 발행합니다.
+   세션은 HTTP-only 쿠키에 저장됩니다.
         │
         ▼
-5. Browser is redirected to /dashboard.
-   Server reads the session from the cookie and passes
-   access_token / refresh_token to the page.
+5. 브라우저가 /dashboard로 리디렉션됩니다.
+   서버는 쿠키에서 세션을 읽고 access_token / refresh_token을
+   페이지로 전달합니다.
         │
         ▼
-6. JWT payload is decoded with atob() — no library needed.
-   { sub, email, role, exp, iat, ... } is rendered as JSON.
+6. 라이브러리 없이 atob()로 JWT 페이로드를 디코딩합니다.
+   { sub, email, role, exp, iat, ... }가 JSON으로 렌더링됩니다.
         │
         ▼
-7. SDK's autoRefreshToken renews the token ~60s before expiry.
-   onAuthStateChange fires TOKEN_REFRESHED → UI updates live.
+7. SDK의 autoRefreshToken이 만료 약 60초 전에 토큰을 갱신합니다.
+   onAuthStateChange가 TOKEN_REFRESHED를 발생시키고 UI가 실시간으로 업데이트됩니다.
 ```
 
-## Security Notice
+## 보안 공지
 
-> ⚠️ This application displays JWT Access Tokens in plaintext in the browser.
-> Access Tokens grant authenticated API access and must be treated as secrets.
-> **Do not use this tool in a production environment or with sensitive accounts.**
+> ⚠️ 이 애플리케이션은 JWT 액세스 토큰을 브라우저에 평문으로 표시합니다.
+> 액세스 토큰은 인증된 API 액세스 권한을 부여하며 비밀로 취급되어야 합니다.
+> **이 도구를 프로덕션 환경이나 절대 민감한 계정에서 사용하지 마십시오.**
