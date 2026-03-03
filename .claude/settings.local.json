@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(yarn create:*)",
+      "Bash(npx sv:*)",
+      "Bash(yarn dlx:*)",
+      "Bash(yarn:*)",
+      "Bash(rm:*)",
+      "Bash(git:*)"
+    ]
+  }
+}
