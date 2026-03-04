@@ -1,8 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { createSupabaseServerClient } from '$lib/server/supabase';
 
-export const load: PageServerLoad = async ({ url, cookies }) => {
+export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 	const code = url.searchParams.get('code');
 	const next = url.searchParams.get('next') ?? '/dashboard';
 
@@ -10,7 +9,6 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		redirect(303, '/?error=missing_code');
 	}
 
-	const supabase = createSupabaseServerClient(cookies);
 	const { error } = await supabase.auth.exchangeCodeForSession(code);
 
 	if (error) {
