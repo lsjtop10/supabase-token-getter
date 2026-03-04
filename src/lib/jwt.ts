@@ -13,7 +13,9 @@ export function decodeJwt(token: string): JwtPayload {
 	const payloadB64 = parts[1];
 	// Base64url → Base64 변환 후 디코딩
 	const base64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
-	const jsonStr = atob(base64);
+	const jsonStr = decodeURIComponent(
+		atob(base64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+	);
 
 	return JSON.parse(jsonStr) as JwtPayload;
 }
