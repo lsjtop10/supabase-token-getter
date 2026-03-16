@@ -26,8 +26,8 @@ export function unixToDate(unix: number): Date {
 }
 
 /** 남은 시간을 "mm분 ss초" 형식의 문자열로 반환 */
-export function formatRemainingTime(expiresAt: Date): string {
-	const diffMs = expiresAt.getTime() - Date.now();
+export function formatRemainingTime(expiresAt: Date, now: Date = new Date()): string {
+	const diffMs = expiresAt.getTime() - now.getTime();
 	if (diffMs <= 0) return '만료됨';
 
 	const totalSeconds = Math.floor(diffMs / 1000);

@@ -8,17 +8,28 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// 토큰 상태
+	// 토큰 및 세션 상태
 	let accessToken = $state(data.accessToken);
 	let refreshToken = $state(data.refreshToken);
 	let expiresAt = $state<Date>(
 		data.expiresAt ? unixToDate(data.expiresAt) : new Date(Date.now() + 3600 * 1000)
 	);
-	let decodedPayload = $state<JwtPayload>(decodeJwt(accessToken));
+
+	// 서버 데이터(data)가 변경될 때 로컬 상태 동기화 (예: 페이지 이동 시)
+	$effect(() => {
+		accessToken = data.accessToken;
+		refreshToken = data.refreshToken;
+		expiresAt = data.expiresAt ? unixToDate(data.expiresAt) : new Date(Date.now() + 3600 * 1000);
+	});
+
+	// 의존성 있는 상태 ($derived) - 경고 해결 및 자동 갱신
+	let now = $state(new Date());
+	let decodedPayload = $derived(decodeJwt(accessToken));
+	let isExpired = $derived(expiresAt.getTime() <= now.getTime());
+	let remainingTime = $derived(formatRemainingTime(expiresAt, now));
 
 	// UI 상태
 	let lastRefreshed = $state<Date | null>(null);
-	let remainingTime = $state(formatRemainingTime(expiresAt));
 	let copyStatus = $state<'idle' | 'copied'>('idle');
 	let copyRefreshStatus = $state<'idle' | 'copied'>('idle');
 	let showRawToken = $state(false);
@@ -42,9 +53,9 @@
 	}
 
 	onMount(() => {
-		// 남은 시간 실시간 업데이트
+		// 남은 시간 실시간 업데이트를 위해 now 상태 갱신
 		const timer = setInterval(() => {
-			remainingTime = formatRemainingTime(expiresAt);
+			now = new Date();
 		}, 1000);
 
 		// 토큰 갱신 이벤트 감지
@@ -57,7 +68,6 @@
 				expiresAt = session.expires_at
 					? unixToDate(session.expires_at)
 					: new Date(Date.now() + 3600 * 1000);
-				decodedPayload = decodeJwt(accessToken);
 				lastRefreshed = new Date();
 			}
 			if (event === 'SIGNED_OUT') {
@@ -102,8 +112,6 @@
 	function formatDate(unix: number): string {
 		return new Date(unix * 1000).toLocaleString('ko-KR');
 	}
-
-	let isExpired = $derived(expiresAt.getTime() <= Date.now());
 </script>
 
 <svelte:head>

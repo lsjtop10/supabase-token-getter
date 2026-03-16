@@ -333,12 +333,39 @@ README.md                       # 프로젝트 설명 및 실행 가이드
 
 ---
 
-## 구현 순서 요약
+---
 
-1. `yarn create svelte` + 패키지 설치
-2. `.env` 작성, Supabase 대시보드 설정
-3. `supabaseClient.ts` 작성 (PKCE + autoRefreshToken)
-4. 로그인 페이지 (`+page.svelte`) - OAuth 버튼
-5. 콜백 라우트 (`auth/callback/+page.server.ts`) - code 교환
-6. 대시보드 페이지 - 토큰 표시 + JWT 디코딩 + 갱신 모니터링
-7. `README.md` 작성
+## Svelte 5 상태 관리 최적화 (Runes)
+
+최근 Svelte 5에서 발생한 `state_referenced_locally` 경고를 해결하고, 상태 관리를 더 선언적으로 개선합니다.
+
+### 주요 개선 사항
+
+1.  **`$derived` 활용**: 다른 상태에 의존하는 값(`decodedPayload`, `isExpired`, `remainingTime`)을 `$state` 대신 `$derived`로 변경하여 자동 동기화를 보장합니다.
+2.  **반응형 시간(`now`) 도입**: `$state(Date.now())`를 1초마다 업데이트하고, 이를 기반으로 `remainingTime`을 계산하여 타이머 로직을 단순화합니다.
+3.  **Prop 동기화**: `data` prop이 변경될 때(예: 서버 사이드 갱신) 로컬 `$state`들이 함께 업데이트되도록 `$effect`를 사용하거나 구조를 재검토합니다.
+
+### 수정 계획
+
+**`src/routes/dashboard/+page.svelte`**
+
+```typescript
+// 기존: 
+// let decodedPayload = $state(decodeJwt(accessToken));
+// let remainingTime = $state(formatRemainingTime(expiresAt));
+
+// 개선:
+let now = $state(Date.now());
+let decodedPayload = $derived(decodeJwt(accessToken));
+let isExpired = $derived(expiresAt.getTime() <= now);
+let remainingTime = $derived(formatRemainingTime(expiresAt, new Date(now)));
+
+onMount(() => {
+    const timer = setInterval(() => {
+        now = Date.now();
+    }, 1000);
+    // ...
+});
+```
+
+이 변경을 통해 `accessToken`이 변경되면 `decodedPayload`가 자동으로 재계산되고, `now`가 변경되면 `remainingTime`이 자동으로 업데이트됩니다.
